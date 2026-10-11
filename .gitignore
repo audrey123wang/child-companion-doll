@@ -14,3 +14,6 @@ work/
 *.mp3
 *.m4a
 *.pcm
+
+__pycache__/
+*.pyc
