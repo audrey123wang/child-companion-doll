@@ -13,4 +13,4 @@
 
 刷写哈希校验与启动串口日志已通过；串口诊断进入三个页面，麦克风驱动正常且静态环境音量读数在 20–48 之间，状态页显示电池 4.17 V。屏幕外观、实体按键手感和蜂鸣器实际响度仍以现场观察为准。串口字符 `n`/`a` 分别模拟 B/A 键，便于开发调试。
 
-本演示固件已取代板上的语音原型应用，因此当前不会上传语音到网关。旧的语音原型可从 `../M5StickCPlusVoice/firmware/` 的源码重新编译和刷入。刷机前另备份了 NVS 配置分区到本工作区 `work/voice-nvs-before-hardware-demo-2026-10-10.bin`；它可能包含 Wi‑Fi 凭据，因此未放进 outputs。原厂镜像备份也在 `work/`。
+本演示固件已取代板上的语音原型应用，因此当前不会上传语音到网关。旧的语音原型固件保留在 `../M5StickCPlusVoice/firmware/release/m5stickcplus-voice-merged.bin`，可通过其 README 的 USB 刷机命令恢复。刷机前另备份了 NVS 配置分区到本工作区 `work/voice-nvs-before-hardware-demo-2026-10-10.bin`；它可能包含 Wi‑Fi 凭据，因此未放进 outputs。原厂镜像备份也在 `work/`。

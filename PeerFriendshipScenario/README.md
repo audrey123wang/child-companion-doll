@@ -5,7 +5,7 @@
 运行测试：
 
 ```sh
-cd PeerFriendshipScenario
+cd outputs/PeerFriendshipScenario
 python3 -m unittest -v test_scene.py
 ```
 

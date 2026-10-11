@@ -13,6 +13,8 @@
 
 ## 实验源码
 
+- [后端与问答 Agent](backend/README.md)：设备录音、ASR、日报、儿童问答和 TTS 的本机 FastAPI 服务。
+- [家长与儿童 App](ChildCompanion/README.md)：已接入首场景后端的 Next.js 前端；尚未实现的界面功能保留现有展示数据。
 - [当前板载功能演示](M5StickCPlusHardwareDemo/README.md)：表情、按键、麦克风音量条和蜂鸣器，已在连接的设备上验证。
 - [按键收音及联网固件实验](M5StickCPlusListeningFirmware/src/main.cpp)：含 BLE 配置、Wi-Fi 上传及板载表情的实验代码。
 - [语音链路原型](M5StickCPlusVoice/README.md)：设备按键收音、Wi-Fi 网关、ASR/对话/TTS、iPhone/Mac 伴随端。
@@ -20,4 +22,4 @@
 
 ## 数据与安全
 
-仓库仅包含文档、源码及表情预览。未上传设备 Flash/NVS 备份、编译产物、应用包、Wi-Fi 密码、网关访问令牌或云服务密钥。实验源码中的凭据由运行时配置提供。与儿童相关的真实录音、逐字稿和报告也不应提交到仓库。
+仓库仅包含文档、源码与演示素材。未上传设备 Flash/NVS 备份、编译产物、应用包、Wi-Fi 密码、网关访问令牌、云服务密钥及本机数据库。实验源码中的凭据由运行时配置提供。与儿童相关的真实录音、逐字稿和报告也不应提交到仓库。

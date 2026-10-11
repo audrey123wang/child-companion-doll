@@ -1,0 +1,2412 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Companion peer-scene scaffold",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/v1/parent/profile": {
+      "put": {
+        "summary": "Save Profile",
+        "operationId": "save_profile_v1_parent_profile_put",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChildProfileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildProfileResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "summary": "Get Profile",
+        "operationId": "get_profile_v1_parent_profile_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildProfileResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parent/device-binding": {
+      "put": {
+        "summary": "Bind Device",
+        "operationId": "bind_device_v1_parent_device_binding_put",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceBinding"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildProfileResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parent/button-recording": {
+      "put": {
+        "summary": "Button Recording",
+        "operationId": "button_recording_v1_parent_button_recording_put",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ButtonRecordingSetting"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildProfileResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/healthz": {
+      "get": {
+        "summary": "Healthz",
+        "operationId": "healthz_healthz_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/device/segments": {
+      "post": {
+        "summary": "Device Audio",
+        "operationId": "device_audio_v1_device_segments_post",
+        "parameters": [
+          {
+            "name": "x-device-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "X-Device-Id"
+            }
+          },
+          {
+            "name": "x-segment-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "X-Segment-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/dev/segments/text": {
+      "post": {
+        "summary": "Submit Synthetic",
+        "operationId": "submit_synthetic_v1_dev_segments_text_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SyntheticSegment"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parent/inputs": {
+      "get": {
+        "summary": "Parent Inputs",
+        "operationId": "parent_inputs_v1_parent_inputs_get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Date"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParentInputsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parent/today": {
+      "get": {
+        "summary": "Parent Today",
+        "operationId": "parent_today_v1_parent_today_get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParentToday"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parent/inputs/{device_id}/{segment_id}": {
+      "patch": {
+        "summary": "Correct Parent Input",
+        "operationId": "correct_parent_input_v1_parent_inputs__device_id___segment_id__patch",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "segment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Segment Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TranscriptCorrection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Parent Input",
+        "operationId": "delete_parent_input_v1_parent_inputs__device_id___segment_id__delete",
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Device Id"
+            }
+          },
+          {
+            "name": "segment_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Segment Id"
+            }
+          },
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "expected_revision",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "title": "Expected Revision"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parent/reports/daily": {
+      "get": {
+        "summary": "Daily Report",
+        "operationId": "daily_report_v1_parent_reports_daily_get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Date"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PendingDailyReport"
+                    },
+                    {
+                      "$ref": "#/components/schemas/FinishedDailyReport"
+                    }
+                  ],
+                  "title": "Response Daily Report V1 Parent Reports Daily Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/parent/events/{event_id}": {
+      "patch": {
+        "summary": "Revise Event",
+        "operationId": "revise_event_v1_parent_events__event_id__patch",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EventRevision"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Delete Event",
+        "operationId": "delete_event_v1_parent_events__event_id__delete",
+        "parameters": [
+          {
+            "name": "event_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Event Id"
+            }
+          },
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/story/today": {
+      "get": {
+        "summary": "Child Story",
+        "operationId": "child_story_v1_child_story_today_get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Age"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/story/today/audio": {
+      "get": {
+        "summary": "Child Story Audio",
+        "operationId": "child_story_audio_v1_child_story_today_audio_get",
+        "parameters": [
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "age",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Age"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/story-sessions": {
+      "post": {
+        "summary": "Start Story Session",
+        "operationId": "start_story_session_v1_child_story_sessions_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StorySessionStart"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StorySessionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/story-sessions/{session_id}": {
+      "delete": {
+        "summary": "Stop Story Session",
+        "operationId": "stop_story_session_v1_child_story_sessions__session_id__delete",
+        "parameters": [
+          {
+            "name": "session_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Session Id"
+            }
+          },
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/chat-turns": {
+      "post": {
+        "summary": "Chat Turn",
+        "operationId": "chat_turn_v1_child_chat_turns_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChatTurn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildChatResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/chat-turns/transcribe": {
+      "post": {
+        "summary": "Transcribe Child Turn",
+        "operationId": "transcribe_child_turn_v1_child_chat_turns_transcribe_post",
+        "parameters": [
+          {
+            "name": "x-child-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "X-Child-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildTranscriptionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/chat-turns/{reply_id}/speech": {
+      "post": {
+        "summary": "Speak Child Turn",
+        "operationId": "speak_child_turn_v1_child_chat_turns__reply_id__speech_post",
+        "parameters": [
+          {
+            "name": "reply_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Reply Id"
+            }
+          },
+          {
+            "name": "child_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Child Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/story-narration": {
+      "post": {
+        "summary": "Story Narration",
+        "operationId": "story_narration_v1_child_story_narration_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StoryNarrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/child/chat-turns/audio": {
+      "post": {
+        "summary": "Chat Voice Turn",
+        "operationId": "chat_voice_turn_v1_child_chat_turns_audio_post",
+        "parameters": [
+          {
+            "name": "x-child-id",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "title": "X-Child-Id"
+            }
+          },
+          {
+            "name": "x-story-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "default": "mimi-new-game-circle-v1",
+              "title": "X-Story-Id"
+            }
+          },
+          {
+            "name": "x-session-id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 64
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Session-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildVoiceChatResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ButtonRecordingSetting": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "enabled"
+        ],
+        "title": "ButtonRecordingSetting"
+      },
+      "ChatTurn": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "story_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Story Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "story_id",
+          "text"
+        ],
+        "title": "ChatTurn"
+      },
+      "ChildChatResult": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "turn_number": {
+            "type": "integer",
+            "title": "Turn Number"
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "conversation",
+              "stopped",
+              "support"
+            ],
+            "title": "Route"
+          },
+          "reply_text": {
+            "type": "string",
+            "title": "Reply Text"
+          },
+          "reply_id": {
+            "type": "string",
+            "title": "Reply Id"
+          },
+          "tts_status": {
+            "type": "string",
+            "enum": [
+              "not_configured",
+              "pending",
+              "ready",
+              "failed"
+            ],
+            "title": "Tts Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "turn_number",
+          "route",
+          "reply_text",
+          "reply_id",
+          "tts_status"
+        ],
+        "title": "ChildChatResult"
+      },
+      "ChildProfileInput": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "age": {
+            "type": "integer",
+            "maximum": 12.0,
+            "minimum": 5.0,
+            "title": "Age"
+          },
+          "school_stage": {
+            "type": "string",
+            "enum": [
+              "kindergarten_large",
+              "grade_1",
+              "grade_2",
+              "grade_3",
+              "grade_4",
+              "grade_5",
+              "grade_6"
+            ],
+            "title": "School Stage"
+          },
+          "listening_start": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listening Start"
+          },
+          "listening_end": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listening End"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "age",
+          "school_stage"
+        ],
+        "title": "ChildProfileInput"
+      },
+      "ChildProfileResult": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "title": "Child Id"
+          },
+          "age": {
+            "type": "integer",
+            "title": "Age"
+          },
+          "school_stage": {
+            "type": "string",
+            "title": "School Stage"
+          },
+          "listening_start": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listening Start"
+          },
+          "listening_end": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Listening End"
+          },
+          "scheduled_listening_status": {
+            "type": "string",
+            "const": "configuration_only",
+            "title": "Scheduled Listening Status"
+          },
+          "button_recording_enabled": {
+            "type": "boolean",
+            "title": "Button Recording Enabled"
+          },
+          "device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Device Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "age",
+          "school_stage",
+          "listening_start",
+          "listening_end",
+          "scheduled_listening_status",
+          "button_recording_enabled",
+          "device_id"
+        ],
+        "title": "ChildProfileResult"
+      },
+      "ChildTranscriptionResult": {
+        "properties": {
+          "heard_text": {
+            "type": "string",
+            "title": "Heard Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "heard_text"
+        ],
+        "title": "ChildTranscriptionResult"
+      },
+      "ChildVoiceChatResult": {
+        "properties": {
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          },
+          "turn_number": {
+            "type": "integer",
+            "title": "Turn Number"
+          },
+          "route": {
+            "type": "string",
+            "enum": [
+              "conversation",
+              "stopped",
+              "support"
+            ],
+            "title": "Route"
+          },
+          "reply_text": {
+            "type": "string",
+            "title": "Reply Text"
+          },
+          "reply_id": {
+            "type": "string",
+            "title": "Reply Id"
+          },
+          "tts_status": {
+            "type": "string",
+            "enum": [
+              "not_configured",
+              "pending",
+              "ready",
+              "failed"
+            ],
+            "title": "Tts Status"
+          },
+          "heard_text": {
+            "type": "string",
+            "title": "Heard Text"
+          },
+          "reply_audio_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reply Audio Base64"
+          },
+          "audio_mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Mime Type"
+          },
+          "ai_voice_disclosure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Voice Disclosure"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "turn_number",
+          "route",
+          "reply_text",
+          "reply_id",
+          "tts_status",
+          "heard_text",
+          "reply_audio_base64",
+          "audio_mime_type",
+          "ai_voice_disclosure"
+        ],
+        "title": "ChildVoiceChatResult"
+      },
+      "DeviceBinding": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "device_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "device_id"
+        ],
+        "title": "DeviceBinding"
+      },
+      "EventRevision": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "summary"
+        ],
+        "title": "EventRevision"
+      },
+      "FinishedDailyReport": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "insufficient"
+            ],
+            "title": "Status"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "report_schema_version": {
+            "type": "integer",
+            "title": "Report Schema Version"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/ReportObservation"
+            },
+            "type": "array",
+            "title": "Observations"
+          },
+          "unknowns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Unknowns"
+          },
+          "parent_prompts": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Parent Prompts"
+          },
+          "story_topic": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Story Topic"
+          },
+          "event_count": {
+            "type": "integer",
+            "title": "Event Count"
+          },
+          "input_counts": {
+            "$ref": "#/components/schemas/ReportInputCounts"
+          },
+          "coverage_note": {
+            "type": "string",
+            "title": "Coverage Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "status",
+          "revision",
+          "report_schema_version",
+          "observations",
+          "unknowns",
+          "parent_prompts",
+          "story_topic",
+          "event_count",
+          "input_counts",
+          "coverage_note"
+        ],
+        "title": "FinishedDailyReport"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "ParentInput": {
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript"
+          },
+          "transcript_revision": {
+            "type": "integer",
+            "title": "Transcript Revision"
+          },
+          "received_at": {
+            "type": "string",
+            "title": "Received At"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "segment_id",
+          "status",
+          "event_id",
+          "transcript",
+          "transcript_revision",
+          "received_at",
+          "summary"
+        ],
+        "title": "ParentInput"
+      },
+      "ParentInputsResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ParentInput"
+            },
+            "type": "array",
+            "title": "Items"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items"
+        ],
+        "title": "ParentInputsResponse"
+      },
+      "ParentToday": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "active_input_count": {
+            "type": "integer",
+            "title": "Active Input Count"
+          },
+          "unreadable_input_count": {
+            "type": "integer",
+            "title": "Unreadable Input Count"
+          },
+          "unclassified_input_count": {
+            "type": "integer",
+            "title": "Unclassified Input Count"
+          },
+          "peer_event_count": {
+            "type": "integer",
+            "title": "Peer Event Count"
+          },
+          "report_status": {
+            "type": "string",
+            "title": "Report Status"
+          },
+          "report_revision": {
+            "type": "integer",
+            "title": "Report Revision"
+          },
+          "coverage_note": {
+            "type": "string",
+            "title": "Coverage Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "active_input_count",
+          "unreadable_input_count",
+          "unclassified_input_count",
+          "peer_event_count",
+          "report_status",
+          "report_revision",
+          "coverage_note"
+        ],
+        "title": "ParentToday"
+      },
+      "PendingDailyReport": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "title": "Date"
+          },
+          "status": {
+            "type": "string",
+            "const": "pending",
+            "title": "Status"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "status",
+          "revision"
+        ],
+        "title": "PendingDailyReport"
+      },
+      "ReportInputCounts": {
+        "properties": {
+          "input_count": {
+            "type": "integer",
+            "title": "Input Count"
+          },
+          "understood_count": {
+            "type": "integer",
+            "title": "Understood Count"
+          },
+          "unclassified_count": {
+            "type": "integer",
+            "title": "Unclassified Count"
+          },
+          "unreadable_count": {
+            "type": "integer",
+            "title": "Unreadable Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "input_count",
+          "understood_count",
+          "unclassified_count",
+          "unreadable_count"
+        ],
+        "title": "ReportInputCounts"
+      },
+      "ReportObservation": {
+        "properties": {
+          "text": {
+            "type": "string",
+            "title": "Text"
+          },
+          "event_ids": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Event Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "text",
+          "event_ids"
+        ],
+        "title": "ReportObservation"
+      },
+      "SegmentResult": {
+        "properties": {
+          "segment_id": {
+            "type": "string",
+            "title": "Segment Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Event Id"
+          },
+          "transcript": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Transcript"
+          },
+          "transcript_revision": {
+            "type": "integer",
+            "title": "Transcript Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "segment_id",
+          "status",
+          "event_id",
+          "transcript",
+          "transcript_revision"
+        ],
+        "title": "SegmentResult"
+      },
+      "StoryNarrationRequest": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "story_id": {
+            "type": "string",
+            "enum": [
+              "friendship-bear",
+              "s1",
+              "s2",
+              "s3",
+              "s4",
+              "s5",
+              "s6"
+            ],
+            "title": "Story Id"
+          },
+          "page": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 0.0,
+            "title": "Page"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 1500,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "story_id",
+          "page",
+          "text"
+        ],
+        "title": "StoryNarrationRequest"
+      },
+      "StorySessionResult": {
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "title": "Session Id"
+          },
+          "story_id": {
+            "type": "string",
+            "title": "Story Id"
+          },
+          "age_band": {
+            "type": "string",
+            "title": "Age Band"
+          },
+          "opening_question": {
+            "type": "string",
+            "title": "Opening Question"
+          },
+          "expires_at": {
+            "type": "string",
+            "title": "Expires At"
+          },
+          "tts_status": {
+            "type": "string",
+            "enum": [
+              "ready",
+              "failed",
+              "not_configured"
+            ],
+            "title": "Tts Status"
+          },
+          "opening_audio_base64": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opening Audio Base64"
+          },
+          "audio_mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Audio Mime Type"
+          },
+          "ai_voice_disclosure": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Voice Disclosure"
+          }
+        },
+        "type": "object",
+        "required": [
+          "session_id",
+          "story_id",
+          "age_band",
+          "opening_question",
+          "expires_at",
+          "tts_status",
+          "opening_audio_base64",
+          "audio_mime_type",
+          "ai_voice_disclosure"
+        ],
+        "title": "StorySessionResult"
+      },
+      "StorySessionStart": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "story_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Story Id"
+          },
+          "age": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 12.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Age"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "story_id"
+        ],
+        "title": "StorySessionStart"
+      },
+      "SyntheticSegment": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "device_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Device Id"
+          },
+          "segment_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Segment Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "device_id",
+          "segment_id",
+          "text"
+        ],
+        "title": "SyntheticSegment"
+      },
+      "TranscriptCorrection": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "expected_revision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Expected Revision"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "text",
+          "expected_revision"
+        ],
+        "title": "TranscriptCorrection"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}

@@ -1,5 +1,13 @@
 # Device backups and generated artifacts
 work/
+.venv/
+node_modules/
+.next/
+.pytest_cache/
+*.tsbuildinfo
+next-env.d.ts
+*.egg-info/
+AGENTS.md
 .pio/
 **/.pio/
 *.bin

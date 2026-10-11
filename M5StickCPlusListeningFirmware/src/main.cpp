@@ -22,6 +22,7 @@ static constexpr uint16_t INK = 0x18E3;
 static constexpr int SAMPLE_RATE = 16000;
 static constexpr int RECORD_SECONDS = 6;
 static constexpr int PCM_SIZE = SAMPLE_RATE * RECORD_SECONDS * 2;
+static constexpr int USB_AUDIO_BYTES = SAMPLE_RATE * RECORD_SECONDS / 2;
 static const char *SERVICE_UUID = "8e7b7000-6e59-4a44-9c31-7bb932760001";
 static const char *SSID_UUID    = "8e7b7001-6e59-4a44-9c31-7bb932760001";
 static const char *PASS_UUID    = "8e7b7002-6e59-4a44-9c31-7bb932760001";
@@ -37,7 +38,10 @@ static uint32_t blePin = 0;
 static volatile bool startRequested = false;
 static volatile bool configChanged = false;
 static bool recording = false;
+static bool usbTransport = false;
 static String lastResult = "Ready";
+static String serialConfigLine;
+static bool serialConfigActive = false;
 
 static void report(const String &state, const String &detail = "") {
     lastResult = state;
@@ -176,7 +180,7 @@ static void statusPage() {
     M5.Lcd.printf("Wi-Fi: %s  Config: %s", WiFi.status() == WL_CONNECTED ? "on" : "off",
                   (!ssid.isEmpty() && !gatewayURL.isEmpty() && !gatewayToken.isEmpty()) ? "yes" : "no");
     M5.Lcd.setCursor(10, 71);
-    M5.Lcd.print("Flash: 4 MB  Display: 135x240");
+    M5.Lcd.printf("Transport: %s", usbTransport ? "USB bridge" : "Wi-Fi");
     M5.Lcd.setCursor(10, 87);
     M5.Lcd.printf("BLE PIN: %06lu", (unsigned long)blePin);
     M5.Lcd.setCursor(10, 103);
@@ -248,6 +252,11 @@ static bool writeAll(WiFiClient &client, const uint8_t *data, size_t size) {
         if (n) written += n;
         else delay(5);
     }
+    if (written != size) {
+        Serial.printf("TCP_WRITE failed wanted=%u written=%u connected=%d wifi=%d elapsed=%lu\n",
+                      (unsigned)size, (unsigned)written, client.connected(),
+                      WiFi.status(), (unsigned long)(millis() - started));
+    }
     return written == size;
 }
 
@@ -307,9 +316,14 @@ static void recordAndUpload() {
             stopMic();
             memset(pcm, 0, wanted);
             count = wanted;
-        } else if (i2s_read(I2S_NUM_0, pcm, wanted, &count, pdMS_TO_TICKS(200)) != ESP_OK || count == 0) {
-            uploadOK = false;
-            break;
+        } else {
+            esp_err_t readResult = i2s_read(I2S_NUM_0, pcm, wanted, &count, pdMS_TO_TICKS(200));
+            if (readResult != ESP_OK || count == 0) {
+                Serial.printf("MIC_READ failed result=%d count=%u sent=%d\n",
+                              readResult, (unsigned)count, sent);
+                uploadOK = false;
+                break;
+            }
         }
         if (!writeAll(client, pcm, count)) { uploadOK = false; break; }
         sent += count;
@@ -327,6 +341,103 @@ static void recordAndUpload() {
     recording = false;
     delay(1200);
     face();
+}
+
+// IMA ADPCM halves each 16-bit sample to four bits so six seconds of audio can
+// stream over the board's reliable 115200 baud USB serial connection in real time.
+static const int16_t ADPCM_STEPS[89] = {
+    7,8,9,10,11,12,13,14,16,17,19,21,23,25,28,31,34,37,41,45,50,55,60,66,73,
+    80,88,97,107,118,130,143,157,173,190,209,230,253,279,307,337,371,408,
+    449,494,544,598,658,724,796,876,963,1060,1166,1282,1411,1552,1707,
+    1878,2066,2272,2499,2749,3024,3327,3660,4026,4428,4871,5358,5894,
+    6484,7132,7845,8630,9493,10442,11487,12635,13899,15289,16818,18500,
+    20350,22385,24623,27086,29794,32767
+};
+static const int8_t ADPCM_INDEX[16] = {-1,-1,-1,-1,2,4,6,8,-1,-1,-1,-1,2,4,6,8};
+
+struct AdpcmState { int predictor = 0; int index = 0; };
+
+static uint8_t encodeAdpcm(int16_t sample, AdpcmState &state) {
+    int step = ADPCM_STEPS[state.index];
+    int difference = static_cast<int>(sample) - state.predictor;
+    uint8_t code = 0;
+    if (difference < 0) { code = 8; difference = -difference; }
+    int adjustment = step >> 3;
+    if (difference >= step) { code |= 4; difference -= step; adjustment += step; }
+    if (difference >= (step >> 1)) { code |= 2; difference -= step >> 1; adjustment += step >> 1; }
+    if (difference >= (step >> 2)) { code |= 1; adjustment += step >> 2; }
+    state.predictor += (code & 8) ? -adjustment : adjustment;
+    state.predictor = constrain(state.predictor, -32768, 32767);
+    state.index = constrain(state.index + ADPCM_INDEX[code], 0, 88);
+    return code;
+}
+
+static void recordAndStreamUSB() {
+    if (recording) return;
+    recording = true;
+    if (!startMic()) {
+        resultScreen("Mic failed", "Restart the device");
+        recording = false;
+        return;
+    }
+    resultScreen("Recording USB", "A: stop  |  max 6 seconds");
+    Serial.printf("USB_AUDIO_BEGIN 1 %d %d %s\n", USB_AUDIO_BYTES,
+                  SAMPLE_RATE, deviceID.c_str());
+    AdpcmState state;
+    uint32_t sumA = 1, sumB = 0;
+    uint32_t captured = 0;
+    bool stopped = false;
+    bool captureOK = true;
+    const uint32_t started = millis();
+    int16_t samples[256];
+    uint8_t encoded[128];
+    for (int block = 0; block < USB_AUDIO_BYTES / 128; ++block) {
+        M5.update();
+        if (millis() - started > 300 && M5.BtnA.wasPressed()) stopped = true;
+        if (millis() - started >= RECORD_SECONDS * 1000UL) stopped = true;
+        if (!stopped && captureOK) {
+            size_t count = 0;
+            esp_err_t err = i2s_read(I2S_NUM_0, samples, sizeof(samples), &count,
+                                     pdMS_TO_TICKS(200));
+            if (err != ESP_OK || count == 0) captureOK = false;
+            else {
+                captured += count / sizeof(int16_t);
+                if (count < sizeof(samples))
+                    memset(reinterpret_cast<uint8_t *>(samples) + count, 0,
+                           sizeof(samples) - count);
+            }
+        }
+        if (stopped || !captureOK) {
+            stopMic();
+            memset(samples, 0, sizeof(samples));
+        }
+        for (int i = 0; i < 128; ++i) {
+            encoded[i] = (encodeAdpcm(samples[2 * i], state) << 4) |
+                          encodeAdpcm(samples[2 * i + 1], state);
+            sumA = (sumA + encoded[i]) % 65521;
+            sumB = (sumB + sumA) % 65521;
+        }
+        size_t written = 0;
+        while (written < sizeof(encoded)) {
+            size_t n = Serial.write(encoded + written, sizeof(encoded) - written);
+            if (n == 0) delay(1);
+            written += n;
+        }
+    }
+    stopMic();
+    Serial.printf("\nUSB_AUDIO_END %08lx %lu %d\n",
+                  (unsigned long)((sumB << 16) | sumA),
+                  (unsigned long)captured, captureOK ? 1 : 0);
+    Serial.flush();
+    resultScreen(captureOK ? "USB sent" : "Mic failed", "Waiting for software");
+    recording = false;
+    delay(900);
+    face();
+}
+
+static void recordSelected() {
+    if (usbTransport) recordAndStreamUSB();
+    else recordAndUpload();
 }
 
 class ConfigWrite : public BLECharacteristicCallbacks {
@@ -376,6 +487,91 @@ static void setupBLE() {
     advertising->start();
 }
 
+static void handleSerialConfig(const String &line) {
+    if (line == "status") {
+        Serial.printf("CONFIG ssid=%d url=%d token=%d wifi=%d ip=%s\n",
+                      !ssid.isEmpty(), !gatewayURL.isEmpty(), !gatewayToken.isEmpty(),
+                      WiFi.status() == WL_CONNECTED, WiFi.localIP().toString().c_str());
+        return;
+    }
+    if (line == "connect") {
+        bool connected = !ssid.isEmpty() && connectWiFi();
+        report(connected ? "Wi-Fi connected" : "Wi-Fi failed",
+               connected ? WiFi.localIP().toString() : "Check SSID/password");
+        face();
+        return;
+    }
+    if (line == "scan") {
+        WiFi.mode(WIFI_STA);
+        int networks = WiFi.scanNetworks(false, true);
+        bool found = false;
+        int strength = 0;
+        int security = -1;
+        for (int i = 0; i < networks; ++i) {
+            if (WiFi.SSID(i) == ssid) {
+                found = true;
+                strength = WiFi.RSSI(i);
+                security = static_cast<int>(WiFi.encryptionType(i));
+                break;
+            }
+        }
+        Serial.printf("SCAN target_found=%d rssi=%d security=%d networks=%d\n",
+                      found, strength, security, networks);
+        WiFi.scanDelete();
+        return;
+    }
+    int equal = line.indexOf('=');
+    if (equal <= 0) { report("Config command error"); return; }
+    String key = line.substring(0, equal);
+    String value = line.substring(equal + 1);
+    if (key == "transport" && (value == "usb" || value == "wifi")) {
+        usbTransport = value == "usb";
+        enterPage(FACE);
+        emotion = 3;
+        face();
+        Serial.printf("CONFIG transport=%s\n", value.c_str());
+        return;
+    }
+    if (key == "bridge" && (value == "delivered" || value == "failed")) {
+        resultScreen(value == "delivered" ? "Delivered" : "Bridge failed",
+                     value == "delivered" ? "Software accepted audio" : "Check Mac bridge");
+        delay(1200);
+        face();
+        return;
+    }
+    if (key == "ssid" && value.length() <= 32) {
+        ssid = value; prefs.putString("ssid", ssid); WiFi.disconnect();
+    } else if (key == "pass" && value.length() <= 64) {
+        password = value; prefs.putString("pass", password); WiFi.disconnect();
+    } else if (key == "url" && value.length() <= 150) {
+        gatewayURL = value; prefs.putString("url", gatewayURL);
+    } else if (key == "token" && value.length() <= 128) {
+        gatewayToken = value; prefs.putString("token", gatewayToken);
+    } else { report("Config command error"); return; }
+    configChanged = true;
+    Serial.printf("CONFIG saved %s\n", key.c_str());
+}
+
+static char readSerialCommand() {
+    char command = 0;
+    while (Serial.available()) {
+        char c = Serial.read();
+        if (!serialConfigActive) {
+            if (c == '@') { serialConfigActive = true; serialConfigLine = ""; }
+            else if (c == 'a' || c == 'n') command = c;
+        } else if (c == '\n') {
+            serialConfigLine.trim();
+            handleSerialConfig(serialConfigLine);
+            serialConfigActive = false;
+            serialConfigLine = "";
+        } else if (c != '\r') {
+            if (serialConfigLine.length() < 256) serialConfigLine += c;
+            else { serialConfigActive = false; serialConfigLine = ""; report("Config too long"); }
+        }
+    }
+    return command;
+}
+
 void setup() {
     Serial.begin(115200);
     M5.begin();
@@ -408,7 +604,7 @@ void loop() {
         if (page == PAGE_STATUS) statusPage();
     }
     // Serial n/a are diagnostic mirrors of the two hardware buttons.
-    char command = Serial.available() ? Serial.read() : 0;
+    char command = readSerialCommand();
     if (M5.BtnB.wasPressed() || command == 'n') {
         M5.Beep.tone(900, 55);
         enterPage(static_cast<Page>((page + 1) % 3));
@@ -419,19 +615,19 @@ void loop() {
         if (page == FACE) {
             if (emotion == 3 || remoteStart) {
                 emotion = 3;
-                recordAndUpload();
+                recordSelected();
             } else {
                 emotion = (emotion + 1) % 4;
                 face();
                 M5.Beep.tone(1300, 65);
             }
         } else if (page == PAGE_STATUS) {
-            if (remoteStart) { enterPage(FACE); emotion = 3; recordAndUpload(); }
+            if (remoteStart) { enterPage(FACE); emotion = 3; recordSelected(); }
             else { M5.Beep.tone(1500, 140); statusPage(); }
         } else if (remoteStart) {
             enterPage(FACE);
             emotion = 3;
-            recordAndUpload();
+            recordSelected();
         }
     }
     if (page == MIC && micReady) {

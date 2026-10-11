@@ -11,7 +11,8 @@ than a speech speaker, so replies play on the companion device.
 - Firmware: PlatformIO / Arduino source in `firmware/`.
 - Firmware compiled and flashed to the connected board on 2026-10-09. The
   serial boot log confirms board initialization and a six-digit BLE PIN.
-- The merged flash image is kept locally and is not published because compiled device images may contain configuration data. Build from source for a fresh image.
+- A merged image for later recovery or reflashing is in
+  `firmware/release/m5stickcplus-voice-merged.bin` (write at offset `0x0`).
 - Gateway: Python standard library only, in `gateway/`.
 - Companion: one SwiftUI source file for iOS and macOS, in `companion/`. The
   macOS app was built and code-signed in `companion/M5StickC Voice.app`.
@@ -75,6 +76,13 @@ pio run -t upload --upload-port /dev/cu.usbserial-59526C1D38
 The upload command replaces the current application. Confirm the serial port
 again if reconnecting the device changes its name. No Wi-Fi password or API key
 is embedded in the compiled image. The BLE configuration is saved in ESP32 NVS.
+
+For the provided merged image, use esptool 4.x:
+
+```sh
+python3 -m esptool --chip esp32 --port /dev/cu.usbserial-59526C1D38 \
+  --baud 115200 write_flash 0x0 firmware/release/m5stickcplus-voice-merged.bin
+```
 
 The original 4 MB flash was backed up before flashing. Its SHA-256 is
 `0b8b29e35b61c73473ed5ddcbed6328e6265e9ec16a14a5130efd3788615def1`.
