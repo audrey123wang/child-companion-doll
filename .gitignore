@@ -1,0 +1,16 @@
+# Device backups and generated artifacts
+work/
+.pio/
+**/.pio/
+*.bin
+*.elf
+*.map
+*.app/
+.DS_Store
+.env
+.env.*
+*.log
+*.wav
+*.mp3
+*.m4a
+*.pcm

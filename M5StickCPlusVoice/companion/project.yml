@@ -1,0 +1,30 @@
+name: M5StickCVoice
+options:
+  bundleIdPrefix: local.m5stickcvoice
+settings:
+  base:
+    SWIFT_VERSION: 5.0
+targets:
+  M5StickCVoice-iOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.0"
+    sources:
+      - VoiceCompanion.swift
+    info:
+      path: Info-iOS.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.m5stickcvoice.ios
+  M5StickCVoice-macOS:
+    type: application
+    platform: macOS
+    deploymentTarget: "13.0"
+    sources:
+      - VoiceCompanion.swift
+    info:
+      path: Info-macOS.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.m5stickcvoice.macos
+
