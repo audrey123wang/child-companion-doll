@@ -12,7 +12,7 @@
 ## 实验源码
 
 - [当前板载功能演示](M5StickCPlusHardwareDemo/README.md)：表情、按键、麦克风音量条和蜂鸣器，已在连接的设备上验证。
-- [按键收音及联网固件实验](M5StickCPlusListeningFirmware/)：含 BLE 配置、Wi-Fi 上传及板载表情的实验代码。
+- [按键收音及联网固件实验](M5StickCPlusListeningFirmware/src/main.cpp)：含 BLE 配置、Wi-Fi 上传及板载表情的实验代码。
 - [语音链路原型](M5StickCPlusVoice/README.md)：设备按键收音、Wi-Fi 网关、ASR/对话/TTS、iPhone/Mac 伴随端。
 
 ## 数据与安全
