@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { getDailyReport, getInputs, getProfile, getToday, type ChildProfile, type DailyReport, type ParentInput, type ParentToday } from '@/lib/api'
 import {
   ANIMALS,
@@ -56,7 +56,7 @@ const StoreContext = createContext<Store | null>(null)
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<Mode>('kid')
-  const [animalId, setAnimalId] = useState<AnimalId>('cat')
+  const [animalId, setAnimalId] = useState<AnimalId>('rabbit')
   const [kidScreen, goKid] = useState<KidScreen>({ name: 'home' })
   const [parentTab, setParentTab] = useState<ParentTab>('overview')
   const [notices, setNoticesState] = useState(NOTICES)
@@ -71,8 +71,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [report, setReport] = useState<DailyReport | null>(null)
   const [dataError, setDataError] = useState<string | null>(null)
   const [dataLoading, setDataLoading] = useState(true)
+  const refreshInFlight = useRef(false)
 
   const refreshData = useCallback(async () => {
+    if (refreshInFlight.current) return
+    refreshInFlight.current = true
     try {
       const currentProfile = await getProfile()
       setProfile(currentProfile)
@@ -91,13 +94,21 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setDataError(error instanceof Error ? error.message : '无法加载本地后端')
     } finally {
       setDataLoading(false)
+      refreshInFlight.current = false
     }
   }, [])
 
   useEffect(() => {
     void refreshData()
-    const timer = setInterval(() => void refreshData(), 30000)
-    return () => clearInterval(timer)
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') void refreshData()
+    }
+    const timer = setInterval(refreshWhenVisible, 2000)
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
   }, [refreshData])
 
   const value = useMemo<Store>(
