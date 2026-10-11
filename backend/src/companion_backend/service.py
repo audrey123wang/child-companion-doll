@@ -25,7 +25,7 @@ class TranscriptExpired(ValueError):
 
 
 class SceneService:
-    REPORT_SCHEMA_VERSION = 2
+    REPORT_SCHEMA_VERSION = 4
 
     def __init__(self, *, now: Callable[[], datetime] | None = None, family_timezone: str = "Asia/Shanghai", sqlite_path: str | None = None):
         self.now = now or (lambda: datetime.now(timezone.utc))
@@ -34,6 +34,7 @@ class SceneService:
         self._segments: dict[tuple[str, str], dict] = {}
         self._events: dict[str, dict] = {}
         self._revision: dict[tuple[str, str], int] = {}
+        self._report_cache: dict[tuple[str, str], dict] = {}
         self._chat_sessions: dict[str, dict] = {}
         self._speech_turns: dict[str, dict] = {}
         self._profile: dict | None = None
@@ -317,19 +318,40 @@ class SceneService:
 
     def report(self, *, child_id: str, day: date) -> dict:
         with self._lock:
-            if day > self._local_now().date() or (day == self._local_now().date() and self._local_now().time() < time(19, 0)):
+            self.assert_child_scope(child_id)
+            local_now = self._local_now()
+            if day > local_now.date():
                 return {"date": day.isoformat(), "status": "pending", "revision": 0}
             revision = self._revision.get((child_id, day.isoformat()), 0)
             if self._store:
                 cached = self._store.get_report(child_id=child_id, local_date=day.isoformat(), revision=revision)
                 if cached is not None and cached.get("report_schema_version") == self.REPORT_SCHEMA_VERSION:
                     return cached
-            events = [e.copy() for e in self._events.values() if e["child_id"] == child_id and e["local_date"] == day.isoformat()]
-            report = REPORT_GRAPH.invoke({"events": events, "input_counts": self._day_input_counts(child_id=child_id, day=day)})["report"]
-            result = {"date": day.isoformat(), "revision": revision, "report_schema_version": self.REPORT_SCHEMA_VERSION, **report}
-            if self._store:
-                self._store.save_report(child_id=child_id, local_date=day.isoformat(), revision=revision, report=result)
-            return result
+                if cached is not None:
+                    return self._materialize_report(child_id=child_id, day=day, revision=revision)
+            cached = self._report_cache.get((child_id, day.isoformat()))
+            if cached is not None and cached["revision"] == revision:
+                return cached
+            if day == local_now.date() and local_now.time() < time(19, 0):
+                return {"date": day.isoformat(), "status": "pending", "revision": 0}
+            return self._materialize_report(child_id=child_id, day=day, revision=revision)
+
+    def generate_report_now(self, *, child_id: str) -> dict:
+        """Generate today's current revision on a parent request, regardless of time."""
+        with self._lock:
+            self.assert_child_scope(child_id)
+            day = self._local_now().date()
+            revision = self._revision.get((child_id, day.isoformat()), 0)
+            return self._materialize_report(child_id=child_id, day=day, revision=revision)
+
+    def _materialize_report(self, *, child_id: str, day: date, revision: int) -> dict:
+        events = [e.copy() for e in self._events.values() if e["child_id"] == child_id and e["local_date"] == day.isoformat()]
+        report = REPORT_GRAPH.invoke({"events": events, "input_counts": self._day_input_counts(child_id=child_id, day=day)})["report"]
+        result = {"date": day.isoformat(), "revision": revision, "report_schema_version": self.REPORT_SCHEMA_VERSION, **report}
+        if self._store:
+            self._store.save_report(child_id=child_id, local_date=day.isoformat(), revision=revision, report=result)
+        self._report_cache[(child_id, day.isoformat())] = result
+        return result
 
     def parent_today(self, *, child_id: str) -> dict:
         with self._lock:
@@ -414,12 +436,13 @@ class SceneService:
             },
         }
 
-    def chat(self, *, child_id: str, story_id: str, text: str, session_id: str | None = None,
+    def chat(self, *, child_id: str, text: str, story_id: str | None = None, session_id: str | None = None,
              model: ChatProvider | None = None) -> dict:
         text = text.strip()
         if not text or len(text) > 300:
             raise ValueError("chat text must be 1-300 characters")
-        if story_id != STORY_ID or self.story(child_id=child_id, age=7)["story"] is None:
+        self.assert_child_scope(child_id)
+        if story_id is not None and (story_id != STORY_ID or self.story(child_id=child_id, age=7)["story"] is None):
             raise ValueError("story is not available for this child today")
         with self._lock:
             now = self._local_now()
@@ -443,7 +466,8 @@ class SceneService:
             ][:3]
         # Network model call stays outside the service lock; a failed call does not consume a turn.
         result = CHAT_GRAPH.invoke({"text": text, "turn_number": turn_number, "age": age,
-                                    "daily_facts": facts, "history": history, "model": model})
+                                    "daily_facts": facts, "history": history, "model": model,
+                                    "story_context": story_id is not None})
         with self._lock:
             now = self._local_now()
             current = self._chat_sessions.get(session_id)

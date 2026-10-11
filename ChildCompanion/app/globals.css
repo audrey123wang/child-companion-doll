@@ -5,8 +5,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: var(--font-nunito), var(--font-noto-sc), 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --font-display: var(--font-kuaile), var(--font-nunito), 'PingFang SC', sans-serif;
+  --font-sans: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', sans-serif;
+  --font-display: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', sans-serif;
   --animate-float: float 4s ease-in-out infinite;
   --animate-breathe: breathe 3s ease-in-out infinite;
   --animate-wiggle: wiggle 0.9s ease-in-out infinite;
@@ -64,10 +64,11 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+html, body, button, input, textarea, select {
+  font-family: 'Microsoft YaHei', '微软雅黑', 'PingFang SC', sans-serif;
+}
+
 :root {
-  --font-nunito: 'Trebuchet MS';
-  --font-noto-sc: 'PingFang SC';
-  --font-kuaile: 'Kaiti SC';
   color-scheme: light;
   --background: #fff6ea;
   --foreground: #4a2e1f;

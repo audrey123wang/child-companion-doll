@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Sparkles } from 'lucide-react'
+import { BookOpen, Sparkles, Volume2 } from 'lucide-react'
 import { useAppStore } from '@/components/app-store'
 import { CharacterSpeechBubble } from '@/components/kid/character-speech-bubble'
 import { CompanionSwitcher } from '@/components/kid/companion-switcher'
@@ -9,7 +9,9 @@ import { QuickChoices } from '@/components/kid/quick-choices'
 import { RabbitCharacter } from '@/components/kid/rabbit-character'
 import { StoryReader } from '@/components/kid/story-reader'
 import { VoiceButton } from '@/components/kid/voice-button'
+import { chatSpeech, homeChatTurn, stopStorySession, transcribe } from '@/lib/api'
 import { RABBIT_IMAGES, STORIES, type RabbitState } from '@/lib/mock-data'
+import { startRecording, type RecordingHandle } from '@/lib/recording'
 import { FRIENDSHIP_STORY } from '@/lib/story-friendship'
 import { cn } from '@/lib/utils'
 
@@ -19,9 +21,9 @@ import { cn } from '@/lib/utils'
  * CompanionMode 控制「当前页面大场景」，RabbitState 控制「兔子当前状态」。
  * 两者是正交的：例如 storyReflection 场景下兔子可以是 speaking。
  *
- * 首页负责角色和故事展示；语音按钮进入真实录音问答页。
+ * 首页负责角色、故事入口和原位录音问答。
  */
-type CompanionMode = 'companion' | 'chatting' | 'story' | 'storyReflection'
+type CompanionMode = 'companion' | 'story' | 'storyReflection'
 
 /** 各状态对应的一句话 */
 const LINES: Record<RabbitState, string> = {
@@ -43,12 +45,11 @@ const STATUS: Record<RabbitState, string> = {
 
 const TIMING = {
   welcome: 2000,
-  thinking: 1200,
   speaking: 2500,
 } as const
 
 export function KidHome() {
-  const { animal, goKid, pushedStories } = useAppStore()
+  const { animal, childId, goKid, pushedStories } = useAppStore()
 
   // ── 大场景 ────────────────────────────────────────────────
   const [mode, setMode] = useState<CompanionMode>('companion')
@@ -60,8 +61,17 @@ export function KidHome() {
   const [choices, setChoices] = useState<string[]>([])
   // ── 场景淡出用（story 切换时让兔子先淡出再换场景）─────────
   const [stageFading, setStageFading] = useState(false)
+  const [recording, setRecording] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [hasReplyAudio, setHasReplyAudio] = useState(false)
+  const recorder = useRef<RecordingHandle | null>(null)
+  const recordTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const replyAudio = useRef<HTMLAudioElement | null>(null)
+  const storyAudio = useRef<HTMLAudioElement | null>(null)
+  const replyAudioUrl = useRef<string | null>(null)
+  const sessionId = useRef<string | null>(null)
 
-  const greeted = useRef(false)
   const timers = useRef<ReturnType<typeof setTimeout>[]>([])
   const pushed = pushedStories.map((id) => STORIES.find((s) => s.id === id)).filter(Boolean)[0]
 
@@ -76,28 +86,29 @@ export function KidHome() {
     return t
   }, [])
 
-  useEffect(() => clearTimers, [clearTimers])
+  useEffect(() => () => {
+    clearTimers()
+    recorder.current?.cancel()
+    if (recordTimer.current) clearTimeout(recordTimer.current)
+    replyAudio.current?.pause()
+    storyAudio.current?.pause()
+    if (replyAudioUrl.current) URL.revokeObjectURL(replyAudioUrl.current)
+    if (sessionId.current) void stopStorySession(childId, sessionId.current).catch(() => {})
+  }, [childId, clearTimers])
 
   // welcome → idle
   useEffect(() => {
     if (mode !== 'companion' || state !== 'welcome') return
     const t = setTimeout(() => {
-      greeted.current = true
       setState('idle')
     }, TIMING.welcome)
     timers.current.push(t)
     return () => clearTimeout(t)
   }, [state, mode])
 
-  // thinking → speaking →（根据场景决定落点）
+  // 回复显示一段时间后，角色恢复待命；气泡文字仍保留最后一条回复。
   useEffect(() => {
-    if (state === 'thinking') {
-      const t = setTimeout(() => setState('speaking'), TIMING.thinking)
-      timers.current.push(t)
-      return () => clearTimeout(t)
-    }
     if (state === 'speaking' && mode === 'companion') {
-      // 纯陪伴态下的自说自话，说完回到 idle
       const t = setTimeout(() => setState('idle'), TIMING.speaking)
       timers.current.push(t)
       return () => clearTimeout(t)
@@ -105,24 +116,106 @@ export function KidHome() {
     return undefined
   }, [state, mode])
 
-  function onVoice() { goKid({ name: 'chat' }) }
+  async function stopAndTranscribe() {
+    const current = recorder.current
+    if (!current) return
+    recorder.current = null
+    if (recordTimer.current) clearTimeout(recordTimer.current)
+    recordTimer.current = null
+    setRecording(false)
+    setBusy(true)
+    setState('thinking')
+    try {
+      const heard = await transcribe(await current.stop(), childId)
+      const text = heard.trim()
+      if (!text) throw new Error('没有听清楚，请再说一次。')
+      await sendMessage(text)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '语音发送失败，请再试一次。')
+      setState('idle')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function onVoice() {
+    if (recording) { await stopAndTranscribe(); return }
+    if (busy) return
+    setError(null)
+    setSpeech(null)
+    replyAudio.current?.pause()
+    setHasReplyAudio(false)
+    setBusy(true)
+    try {
+      recorder.current = await startRecording()
+      setRecording(true)
+      setState('listening')
+      recordTimer.current = setTimeout(() => void stopAndTranscribe(), 12000)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '麦克风不可用')
+      setState('idle')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function sendMessage(text: string) {
+    setError(null)
+    setState('thinking')
+    const turn = await homeChatTurn(childId, text, sessionId.current)
+    sessionId.current = turn.route === 'conversation' ? turn.session_id : null
+    setSpeech(turn.reply_text)
+    setState('speaking')
+    setHasReplyAudio(false)
+    if (replyAudio.current) replyAudio.current.pause()
+    if (replyAudioUrl.current) URL.revokeObjectURL(replyAudioUrl.current)
+    replyAudioUrl.current = null
+    if (turn.tts_status === 'pending') {
+      try {
+        const mp3 = await chatSpeech(childId, turn.reply_id)
+        const url = URL.createObjectURL(mp3)
+        replyAudioUrl.current = url
+        setHasReplyAudio(true)
+        const player = new Audio(url)
+        replyAudio.current = player
+        await player.play()
+      } catch {
+        setError('文字回答已显示；语音播放失败，可点播放按钮重试。')
+      }
+    }
+  }
+
+  function replayReply() {
+    if (!replyAudio.current) return
+    replyAudio.current.currentTime = 0
+    void replyAudio.current.play().catch(() => setError('浏览器阻止了播放，请再点一次。'))
+  }
 
   function onPick(label: string) {
     if (label === '听故事') enterStory()
-    if (label === '聊一聊') goKid({ name: 'chat' })
+    if (label === '聊一聊') void onVoice()
   }
 
-  // ── 进入故事模式：先淡出兔子区，再切场景 ──────────────────
+  // ── 进入故事模式：在点击时立即挂载播放器，以便自动播放 ────
   function enterStory() {
-    setStageFading(true)
+    replyAudio.current?.pause()
     clearTimers()
     setChoices([])
-    setSpeech(null)
-    later(() => {
-      setMode('story')
-      setState('idle')
-      setStageFading(false)
-    }, 380)
+    storyAudio.current?.pause()
+    const firstScene = new Audio(FRIENDSHIP_STORY.scenes[0].audio)
+    storyAudio.current = firstScene
+    void firstScene.play().catch(() => {})
+    setMode('story')
+    setState('idle')
+    setStageFading(false)
+  }
+
+  function returnToConversation() {
+    clearTimers()
+    storyAudio.current?.pause()
+    storyAudio.current = null
+    setMode('companion')
+    setStageFading(false)
   }
 
   // ── 故事结束：进入 storyReflection，嘟嘟重新淡入 ───────────
@@ -163,10 +256,10 @@ export function KidHome() {
             stageFading ? 'opacity-0' : 'opacity-100 animate-fade-up',
           )}
         >
-          <StoryReader story={FRIENDSHIP_STORY} onFinish={onStoryFinish} />
+          <StoryReader story={FRIENDSHIP_STORY} onFinish={onStoryFinish} onBack={returnToConversation} initialAudio={storyAudio.current} />
         </div>
       ) : (
-        /* ── 陪伴 / 聊天 / 反思场景 ─────────────────────── */
+        /* ── 陪伴 / 反思场景 ───────────────────────────── */
         <div
           className={cn(
             'flex w-full max-w-3xl flex-1 flex-col items-center justify-center gap-3 sm:gap-4 [@media(max-height:820px)]:gap-2 lg:gap-5',
@@ -181,7 +274,7 @@ export function KidHome() {
             sources={animal.states ?? RABBIT_IMAGES}
             fallbackSrc={animal.image}
             alt={`${animal.species}${animal.name}`}
-            className="w-[76%] max-w-[34rem] sm:w-[68%] lg:w-[58%]"
+            className="w-[70%] max-w-[28rem] sm:w-[60%] lg:w-[50%]"
           />
 
           <p
@@ -195,7 +288,18 @@ export function KidHome() {
           {/* 对话中的轻量快捷选择 */}
           <QuickChoices options={choices} onPick={onPick} className="min-h-0" />
 
-          <VoiceButton listening={false} onClick={onVoice} />
+          <VoiceButton listening={recording} disabled={busy} onClick={() => void onVoice()} />
+          {hasReplyAudio && <button type="button" onClick={replayReply} className="flex items-center gap-2 rounded-full bg-card px-5 py-2 text-sm font-semibold shadow-sm"><Volume2 className="size-4" />再听一遍回答</button>}
+          {error && <p role="alert" className="max-w-md rounded-2xl bg-destructive/10 px-4 py-2 text-center text-sm">{error}</p>}
+          <button
+            type="button"
+            onClick={enterStory}
+            disabled={recording || busy}
+            className="mt-1 flex items-center gap-2 rounded-full bg-card px-7 py-3 font-display text-lg font-semibold text-foreground shadow-sm transition hover:shadow-md active:scale-[0.98] disabled:opacity-50"
+          >
+            <BookOpen className="size-6 text-primary" />
+            讲故事
+          </button>
 
           {pushed && mode === 'companion' && (
             <button

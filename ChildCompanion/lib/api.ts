@@ -36,6 +36,7 @@ export type DailyReport =
   | {
       date: string; status: 'ready' | 'insufficient'; revision: number
       observations: { text: string; event_ids: string[] }[]
+      main_issue: { problem: string; guidance: string; event_ids: string[] } | null
       unknowns: string[]; parent_prompts: string[]; story_topic: string | null
       event_count: number; coverage_note: string
       input_counts: { input_count: number; understood_count: number; unclassified_count: number; unreadable_count: number }
@@ -92,6 +93,11 @@ export async function getInputs(childId: string, date: string) {
 export function getDailyReport(childId: string, date: string) {
   return json<DailyReport>(`/v1/parent/reports/daily?${query({ child_id: childId, date })}`)
 }
+export function generateDailyReport(childId: string) {
+  return json<Extract<DailyReport, { status: 'ready' | 'insufficient' }>>(
+    '/v1/parent/reports/daily/generate', payload({ child_id: childId }),
+  )
+}
 export function correctInput(input: ParentInput, childId: string, text: string) {
   return json(`/v1/parent/inputs/${encodeURIComponent(input.device_id)}/${encodeURIComponent(input.segment_id)}`, {
     method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -111,6 +117,11 @@ export async function transcribe(audio: Blob, childId: string): Promise<string> 
 export function chatTurn(childId: string, text: string, sessionId: string | null) {
   return json<ChatReply>('/v1/child/chat-turns', payload({
     child_id: childId, story_id: STORY_AGENT_ID, text, session_id: sessionId,
+  }))
+}
+export function homeChatTurn(childId: string, text: string, sessionId: string | null) {
+  return json<ChatReply>('/v1/child/conversations/turns', payload({
+    child_id: childId, text, session_id: sessionId,
   }))
 }
 export async function chatSpeech(childId: string, replyId: string): Promise<Blob> {

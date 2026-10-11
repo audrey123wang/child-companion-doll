@@ -52,6 +52,7 @@ def _build_report(state: ReportState) -> ReportState:
     if not events:
         return {"report": {
             "status": "insufficient", "observations": [],
+            "main_issue": None,
             "unknowns": ["今天没有足够的可用同伴相处信息，不能判断孩子的整体情况。"],
             "parent_prompts": [], "story_topic": None, "event_count": 0,
             "input_counts": counts, "coverage_note": coverage_note,
@@ -67,9 +68,40 @@ def _build_report(state: ReportState) -> ReportState:
     unknowns = ["不知道其他孩子当时的想法或完整经过。", "现有留言不能代表孩子全天的心情。"]
     if len(events) == 1:
         unknowns.append("今天只有一条同伴相处留言，不能判断是否反复发生。")
+    issue_templates = {
+        "peer_changed_playmate": (
+            "同伴转去和别人玩，自己没能一起参与的困扰。",
+            "先听孩子说当时看到了什么、有什么感受；再和孩子练习友好地问能否加入，也可以一起想想其他想玩的活动。",
+        ),
+        "not_playing_together": (
+            "没能和同伴一起玩的困扰。",
+            "先接住孩子的感受，问清事情经过、是否反复发生；再一起练习邀请同伴或向老师求助。若反复出现排斥或孩子感到害怕，可向老师了解情况。",
+        ),
+        "wants_to_join_play": (
+            "想加入同伴游戏时需要支持。",
+            "先问孩子想玩什么、试过哪些方法；可以一起练习说“我可以一起玩吗”，也准备被拒绝时的其他选择。",
+        ),
+    }
+    priority = {"peer_changed_playmate": 0, "not_playing_together": 1, "wants_to_join_play": 2}
+    situations = {situation: [e for e in events if e.get("situation") == situation] for situation in issue_templates}
+    recognized = [situation for situation, matching in situations.items() if matching]
+    if recognized:
+        main_situation = min(recognized, key=lambda situation: (-len(situations[situation]), priority[situation]))
+        issue, guidance = issue_templates[main_situation]
+        supporting_events = situations[main_situation]
+    else:
+        issue = "与同伴相处时遇到的困扰。"
+        guidance = "先听孩子描述具体经过和感受，再一起商量可以尝试的沟通方式；需要时向老师了解情况。"
+        supporting_events = events
+    main_issue = {
+        "problem": issue,
+        "guidance": guidance,
+        "event_ids": [event["event_id"] for event in supporting_events],
+    }
     return {"report": {
         "status": "ready",
         "observations": observations,
+        "main_issue": main_issue,
         "unknowns": unknowns,
         "parent_prompts": ["你当时最想玩什么？", "后来发生了什么？", "你希望我先听你说，还是一起想想明天怎么办？"],
         "story_topic": "friendship_and_inclusion",
@@ -93,6 +125,7 @@ class ChatState(TypedDict, total=False):
     daily_facts: list[str]
     history: list[dict[str, str]]
     model: ChatProvider | None
+    story_context: bool
     route: str
     reply: str
     fallback_reply: str
@@ -107,12 +140,22 @@ def _chat_generate(state: ChatState) -> ChatState:
     model = state.get("model")
     if model is None:
         return {"reply": state["fallback_reply"]}
-    story = STORY_VARIANTS[age_band(state["age"])]
     facts = "；".join(state.get("daily_facts", [])[:3]) or "今天没有可用的同伴事件摘要"
+    if state.get("story_context"):
+        story = STORY_VARIANTS[age_band(state["age"])]
+        context = (
+            "你是儿童故事角色小猫米米，正在和一位 5-12 岁儿童聊如何与朋友相处。"
+            f"故事：{story['title']}。故事主旨：遇到朋友换了玩伴时，先区分看到的事实和自己的猜测，"
+            "可以温和地问一问，也可以找可信任的大人聊。"
+        )
+    else:
+        context = (
+            "你是儿童陪伴角色嘟嘟，正在和一位 5-12 岁儿童直接聊天，主题是与小朋友相处和交朋友。"
+            "这不是讲故事或故事后的讨论，不要假定孩子已经听过某个故事。"
+        )
     system = (
-        "你是儿童故事角色小猫米米，正在和一位 5-12 岁儿童聊如何与朋友相处。"
-        f"孩子年龄：{state['age']} 岁。故事：{story['title']}。故事主旨：遇到朋友换了玩伴时，先区分看到的事实和自己的猜测，"
-        "可以温和地问一问，也可以找可信任的大人聊。"
+        context
+        + f"孩子年龄：{state['age']} 岁。"
         f"今天可用的同伴事件摘要：{facts}。这些只是孩子主动留言的片段，不能代表全天情况。"
         "只依据这些摘要和孩子当前主动说的话回应，不提设备收音、家长报告、其他孩子姓名或未提供的事实。"
         "不要猜测其他孩子的动机，不做诊断，不承诺保密，不要求儿童提供住址、学校等个人信息。"

@@ -1140,6 +1140,62 @@
         }
       }
     },
+    "/v1/child/conversations/turns": {
+      "post": {
+        "summary": "Home Chat Turn",
+        "operationId": "home_chat_turn_v1_child_conversations_turns_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HomeChatTurn"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChildChatResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/v1/child/chat-turns/transcribe": {
       "post": {
         "summary": "Transcribe Child Turn",
@@ -1897,6 +1953,40 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HomeChatTurn": {
+        "properties": {
+          "child_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Child Id"
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Text"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "child_id",
+          "text"
+        ],
+        "title": "HomeChatTurn"
       },
       "ParentInput": {
         "properties": {

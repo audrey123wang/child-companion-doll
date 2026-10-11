@@ -95,6 +95,43 @@ def test_text_first_then_tts_with_daily_context_and_session_history():
                        params={"child_id": "child-1"}, headers=CHILD).status_code == 404
 
 
+def test_home_conversation_calls_model_before_evening_without_story_or_event():
+    service = SceneService(now=lambda: datetime(2026, 10, 11, 9, tzinfo=timezone.utc))  # 17:00 Shanghai
+    service.set_profile(child_id="child-1", age=7, school_stage="grade_1",
+                        listening_start=None, listening_end=None)
+
+    class Model:
+        calls = []
+        def complete(self, messages):
+            self.calls.append(messages)
+            return "听起来你很想和朋友一起玩。你愿意说说今天发生了什么吗？"
+
+    model = Model()
+    client = TestClient(create_app(service, chat_provider=model))
+    home = client.post("/v1/child/conversations/turns", json={
+        "child_id": "child-1", "text": "今天朋友没有跟我玩",
+    }, headers=CHILD)
+    assert home.status_code == 200, home.text
+    assert home.json()["reply_text"].startswith("听起来")
+    assert "故事：" not in model.calls[0][0]["content"]
+    assert "直接聊天" in model.calls[0][0]["content"]
+
+    again = client.post("/v1/child/conversations/turns", json={
+        "child_id": "child-1", "text": "我有点难过", "session_id": home.json()["session_id"],
+    }, headers=CHILD)
+    assert again.status_code == 200
+    assert model.calls[1][-3:] == [
+        {"role": "user", "content": "今天朋友没有跟我玩"},
+        {"role": "assistant", "content": home.json()["reply_text"]},
+        {"role": "user", "content": "我有点难过"},
+    ]
+    story = client.post("/v1/child/chat-turns", json={
+        "child_id": "child-1", "story_id": STORY_ID, "text": "故事讲完了吗",
+    }, headers=CHILD)
+    assert story.status_code == 404
+    assert len(model.calls) == 2
+
+
 def test_model_failure_does_not_consume_turn_and_stop_bypasses_model():
     service = SceneService(now=lambda: datetime(2026, 10, 11, 12, tzinfo=timezone.utc))
     service.submit_synthetic(**SAMPLE)

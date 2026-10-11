@@ -47,6 +47,7 @@ type Store = {
   today: ParentToday | null
   inputs: ParentInput[]
   report: DailyReport | null
+  applyReport: (value: DailyReport) => void
   dataError: string | null
   dataLoading: boolean
   refreshData: () => Promise<void>
@@ -72,6 +73,16 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [dataError, setDataError] = useState<string | null>(null)
   const [dataLoading, setDataLoading] = useState(true)
   const refreshInFlight = useRef(false)
+
+  const applyReport = useCallback((value: DailyReport) => {
+    setReport(value)
+    setToday((current) => current?.date === value.date ? {
+      ...current,
+      report_status: value.status,
+      report_revision: value.revision,
+      coverage_note: value.status === 'pending' ? current.coverage_note : value.coverage_note,
+    } : current)
+  }, [])
 
   const refreshData = useCallback(async () => {
     if (refreshInFlight.current) return
@@ -132,10 +143,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setMicPaused,
       pushedStories,
       pushStory: (id) => setPushed((p) => (p.includes(id) ? p : [id, ...p])),
-      childId, profile, today, inputs, report, dataError, dataLoading, refreshData,
+      childId, profile, today, inputs, report, applyReport, dataError, dataLoading, refreshData,
     }),
     [mode, animalId, kidScreen, parentTab, notices, events, schedule, micPaused, pushedStories,
-      childId, profile, today, inputs, report, dataError, dataLoading, refreshData],
+      childId, profile, today, inputs, report, applyReport, dataError, dataLoading, refreshData],
   )
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>

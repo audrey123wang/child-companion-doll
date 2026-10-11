@@ -14,6 +14,8 @@ export type StoryScene = {
   text: string
   /** 插画路径（public 下的静态资源，Netlify 可直接访问） */
   image: string
+  /** 预先生成并保存在 public 下的故事录音 */
+  audio: string
 }
 
 export type Story = {
@@ -42,6 +44,7 @@ export const FRIENDSHIP_STORY: Story = {
 她想：
 “阿团今天是不是不想和我玩了？”`,
       image: '/stories/friendship/scene-1.png',
+      audio: '/stories/friendship/audio/scene-1.mp3',
     },
     {
       index: 2,
@@ -62,6 +65,7 @@ export const FRIENDSHIP_STORY: Story = {
 
 “等等……我其实还没有问过阿团呀。”`,
       image: '/stories/friendship/scene-2.png',
+      audio: '/stories/friendship/audio/scene-2.mp3',
     },
     {
       index: 3,
@@ -86,6 +90,7 @@ export const FRIENDSHIP_STORY: Story = {
 有时候去问一问，
 事情可能和自己想的不一样。`,
       image: '/stories/friendship/scene-3.png',
+      audio: '/stories/friendship/audio/scene-3.mp3',
     },
     {
       index: 4,
@@ -117,6 +122,7 @@ export const FRIENDSHIP_STORY: Story = {
 
 如果这一次没有一起玩，也可以去做自己喜欢的事。`,
       image: '/stories/friendship/scene-4.png',
+      audio: '/stories/friendship/audio/scene-4.mp3',
     },
   ],
 }

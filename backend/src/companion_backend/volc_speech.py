@@ -7,7 +7,6 @@ import binascii
 import gzip
 import json
 import struct
-import time
 import uuid
 from typing import Callable
 
@@ -78,14 +77,13 @@ def _response(data: bytes) -> tuple[bool, dict]:
 class VolcAsr2:
     def __init__(
         self, api_key: str, *, resource_id: str = ASR_RESOURCE,
-        connector: Callable | None = None, pause: Callable[[float], None] = time.sleep,
+        connector: Callable | None = None,
     ):
         if not api_key:
             raise ValueError("API key is required")
         self._key = api_key
         self._resource = resource_id
         self._connect = connector or connect
-        self._pause = pause
 
     def transcribe(self, audio: bytes, *, mime_type: str) -> str:
         if mime_type != "audio/wav" or len(audio) < 44 or audio[:4] != b"RIFF":
@@ -117,8 +115,6 @@ class VolcAsr2:
                         if not is_final:
                             raise AsrError("ASR final response missing")
                         final_body = response
-                    elif not is_final:
-                        self._pause(0.2)
         except AsrError:
             raise
         except InvalidStatus as exc:

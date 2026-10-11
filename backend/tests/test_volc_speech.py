@@ -54,7 +54,7 @@ def test_volc_asr_frames_auth_and_final_text():
         headers_seen.append(additional_headers)
         return Socket()
 
-    result = VolcAsr2("secret-for-test", connector=connect, pause=lambda _: None).transcribe(wav(), mime_type="audio/wav")
+    result = VolcAsr2("secret-for-test", connector=connect).transcribe(wav(), mime_type="audio/wav")
     assert result == "今天我想和朋友玩。"
     assert headers_seen[0]["X-Api-Resource-Id"] == "volc.seedasr.sauc.duration"
     assert headers_seen[0]["X-Api-Key"] == "secret-for-test"

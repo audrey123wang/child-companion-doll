@@ -1,8 +1,8 @@
 # 同伴相处首场景后端（本机实验）
 
-在 `backend/.env` 配置 `DEEPSEEK_API_KEY` 和 `VOLC_API_KEY` 后，从项目根目录运行 `backend/run_local.sh` 即可启动后端。此文件仅供本机使用，已被 `.gitignore` 排除；前端与固件不读取此文件。
+本机已配置密钥时，从项目根目录运行 `backend/run_local.sh` 即可启动后端。脚本读取仅供本机使用、已被 `.gitignore` 排除的 `backend/.env`；前端与固件不读取此文件。
 
-当前工程提供两条本机链路：娃娃按键录音 → Mac USB 桥接 → ASR → 当日逐字稿/事件/家长日报；以及平板端短录音 → ASR → DeepSeek V4 同伴相处问答 → 先展示文字 → 按需 TTS。前端位于 `outputs/ChildCompanion`，故事仍是待审核原创草稿。**此工程仅用于本机授权成人样音与合成数据的功能验证；不要用于真实儿童数据或对外网开放。**
+当前工程提供两条本机链路：娃娃按键录音 → Mac USB 桥接 → ASR → 当日逐字稿/事件/家长日报；以及平板端短录音 → ASR → DeepSeek V4 同伴相处问答 → 先展示文字 → 按需 TTS。首页自由问答与故事后讨论使用独立入口；首页问答不要求当晚已有故事推荐。前端位于 `outputs/ChildCompanion`，故事仍是待审核原创草稿。**此工程仅用于本机授权成人样音与合成数据的功能验证；不要用于真实儿童数据或对外网开放。**
 
 ## 运行
 
@@ -12,7 +12,7 @@ Python 3.11+，本机已有虚拟环境与 `backend/.env` 时，从项目根目�
 backend/run_local.sh
 ```
 
-`VOLC_API_KEY` 需在本机环境中设置；不要写入仓库、固件或聊天。此密钥同时传给火山引擎流式语音识别 2.0 与语音合成 2.0，但对应账号必须分别开通两项服务及所选资源。ASR 默认资源为 `volc.seedasr.sauc.duration`（小时版），可用 `VOLC_ASR_RESOURCE_ID=volc.seedasr.sauc.concurrent` 改为并发版。TTS 默认资源为 `seed-tts-2.0`，默认音色 `zh_female_vv_uranus_bigtts`，可用 `VOLC_TTS_SPEAKER` 配置账号已开通的 2.0 音色。ASR 通过 WebSocket 按约 200 毫秒分包上传录好的 WAV，并在最后一包后取完整文字；当前接口不向前端实时推送中间转写。TTS 通过 HTTP Chunked 收取并拼接 MP3 片段，然后返回完整音频。未设置密钥时 `/v1/device/segments` 返回 `503`，不会生成假转写。若不使用 USB 桥接，可省略 `LOCAL_DEVICE_TOKEN_FILE`，用 `LOCAL_DEVICE_TOKEN` 配置本机演示令牌。`LOCAL_SQLITE_PATH` 可省略；省略后记录仅在内存中。SQLite 文件未加密，当前仅适合成人样音实验。接口文档：`http://127.0.0.1:8766/docs`。
+`VOLC_API_KEY` 需在本机环境中设置；不要写入仓库、固件或聊天。此密钥同时传给火山引擎流式语音识别 2.0 与语音合成 2.0，但对应账号必须分别开通两项服务及所选资源。ASR 默认资源为 `volc.seedasr.sauc.duration`（小时版），可用 `VOLC_ASR_RESOURCE_ID=volc.seedasr.sauc.concurrent` 改为并发版。TTS 默认资源为 `seed-tts-2.0`，默认音色 `zh_female_vv_uranus_bigtts`，可用 `VOLC_TTS_SPEAKER` 配置账号已开通的 2.0 音色。ASR 通过 WebSocket 将录好的 WAV 按每包约 200 毫秒音频分包上传，逐包等待服务端响应，不再额外等待 200 毫秒；当前接口不向前端实时推送中间转写。TTS 通过 HTTP Chunked 收取并拼接 MP3 片段，然后返回完整音频。未设置密钥时 `/v1/device/segments` 返回 `503`，不会生成假转写。若不使用 USB 桥接，可省略 `LOCAL_DEVICE_TOKEN_FILE`，用 `LOCAL_DEVICE_TOKEN` 配置本机演示令牌。`LOCAL_SQLITE_PATH` 可省略；省略后记录仅在内存中。SQLite 文件未加密，当前仅适合成人样音实验。接口文档：`http://127.0.0.1:8766/docs`。
 
 `DEEPSEEK_API_KEY` 只用于文字问答，独立于语音密钥；默认模型为 `deepseek-v4-pro`，可用 `DEEPSEEK_MODEL` 改为账号可用的其他模型。未设置该密钥时，真实问答接口返回 `503`。模型按同伴相处主题接收孩子当前输入、当天最多三条同伴事件摘要及本次会话最近几轮文字。模型失败返回 `502`，不会消耗会话轮次。使用模型前需确认对应账号已开通该模型；本机模拟测试不会验证账号权限或实际计费。
 
@@ -54,7 +54,8 @@ curl -X PUT http://127.0.0.1:8766/v1/parent/button-recording \
 - `GET /v1/child/story/today/audio?child_id=...&age=7`：以 MP3 朗读当日适龄故事的标题和正文；需要 TTS 密钥，响应标明 AI 合成声音。前端需同步显示“这段声音由 AI 生成”。
 - `POST /v1/child/story-sessions`：故事播放完后提交 `child_id`、`story_id`，未配置家长档案的纯本机实验还需传 `age`。返回 20 分钟会话 ID、适龄开场问题及其 MP3 Base64 配音；TTS 失败时仍返回文字问题和会话 ID，`tts_status=failed`。`DELETE /v1/child/story-sessions/{session_id}?child_id=...` 供儿童端退出按钮直接结束会话；过期会话自动清理。
 - `POST /v1/child/chat-turns/transcribe`：平板端发送 16 kHz 单声道 PCM16 WAV（0.25–15 秒、最多 500 KB），请求头带 `X-Child-ID`、`Content-Type: audio/wav`；只返回 `heard_text`，由儿童端先展示并允许确认，不写入家长记录。
-- `POST /v1/child/chat-turns`：儿童端确认文字后提交 `child_id`、`story_id`、`text` 和可选 `session_id`。调用 DeepSeek V4 后立即返回 `reply_text`、`reply_id` 和 `tts_status=pending`（已配置 TTS 时）；客户端先展示文字。最多六轮，停止语句立即结束；会话只在内存中保留 20 分钟，不写入家长记录。`ALLOW_SYNTHETIC_INPUT=1` 的本机测试允许无模型时使用规则回复。
+- `POST /v1/child/conversations/turns`：首页直接问答，提交 `child_id`、`text` 和可选 `session_id`；无需故事 ID，不受 19:00 推荐故事条件限制。仍使用当天最多三条同伴事件摘要作为可选背景，若没有摘要则仅按孩子当下说的话回答。返回文字及 `reply_id`，配音继续通过 `/v1/child/chat-turns/{reply_id}/speech` 获取。
+- `POST /v1/child/chat-turns`：故事后讨论入口，提交 `child_id`、`story_id`、`text` 和可选 `session_id`，仍须满足当晚故事推荐条件。调用 DeepSeek V4 后立即返回 `reply_text`、`reply_id` 和 `tts_status=pending`（已配置 TTS 时）；客户端先展示文字。每次会话最多六轮，停止语句立即结束；会话只在内存中保留 20 分钟，不写入家长记录。`ALLOW_SYNTHETIC_INPUT=1` 的本机测试允许无模型时使用规则回复。
 - `POST /v1/child/chat-turns/{reply_id}/speech?child_id=...`：文字展示后由客户端请求 MP3 并播放。语音合成失败返回 `502`，不影响已返回的文字；回复 ID 仅在内存中保存 20 分钟。
 - `POST /v1/child/story-narration`：给前端保留的本地故事逐页生成 MP3；提交 `child_id`、允许的本地 `story_id`、页号和最多 1500 字正文。仅限本机实验，返回 `audio/mpeg` 和 AI 配音标记。
 - `POST /v1/child/chat-turns/audio`：旧版一体化短语音接口，仍支持 ASR→模型→TTS，一次返回文字与 MP3 Base64；新客户端应使用上述三步调用以保证先展示文字。静音、过短或不完整录音返回 `422`。

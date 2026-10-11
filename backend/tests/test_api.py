@@ -51,9 +51,25 @@ def test_ingest_report_idempotency_and_role_isolation():
     assert client.post("/v1/dev/segments/text", json={**SAMPLE, "child_id": "another-child"}, headers=DEVICE).status_code == 409
     report = client.get("/v1/parent/reports/daily", params={"child_id": "child-1", "date": "2026-10-11"}, headers=PARENT).json()
     assert report["event_count"] == 1
+    assert report["main_issue"]["problem"] == "同伴转去和别人玩，自己没能一起参与的困扰。"
+    assert "先听孩子" in report["main_issue"]["guidance"]
     assert "不知道其他孩子" in report["unknowns"][0]
     assert "甜甜" not in str(report)
     assert client.get("/v1/parent/inputs", params={"child_id": "child-1", "date": "2026-10-11"}, headers=CHILD).status_code == 403
+
+
+def test_report_main_issue_uses_recognized_peer_situation():
+    clock = [datetime(2026, 10, 11, 12, 0, tzinfo=timezone.utc)]
+    for transcript, expected_problem in [
+        ("今天小朋友不跟我玩", "没能和同伴一起玩的困扰。"),
+        ("我想跟小朋友一起玩游戏", "想加入同伴游戏时需要支持。"),
+    ]:
+        client = make_client(clock)
+        event_id = client.post("/v1/dev/segments/text", json={**SAMPLE, "text": transcript}, headers=DEVICE).json()["event_id"]
+        report = client.get("/v1/parent/reports/daily", params={"child_id": "child-1", "date": "2026-10-11"}, headers=PARENT).json()
+        assert report["main_issue"]["problem"] == expected_problem
+        assert report["main_issue"]["guidance"]
+        assert report["main_issue"]["event_ids"] == [event_id]
 
 
 def test_midnight_expiry_and_delete_recomputes_report():
@@ -188,6 +204,38 @@ def test_1900_report_materializes_and_revises(tmp_path):
     assert service.generate_due_reports() == 1
     assert service.report(child_id="child-1", day=datetime(2026, 10, 11).date())["revision"] == 2
     service._store.close()
+
+
+def test_parent_can_generate_today_report_before_1900_and_refresh_after_new_input(tmp_path):
+    clock = [datetime(2026, 10, 11, 2, 0, tzinfo=timezone.utc)]  # 10:00 Shanghai
+    path = tmp_path / "scene.sqlite3"
+    service = SceneService(now=lambda: clock[0], sqlite_path=str(path))
+    client = TestClient(create_app(service, synthetic_enabled=True))
+    configure_local_device(client)
+    report_url = "/v1/parent/reports/daily"
+    params = {"child_id": "child-1", "date": "2026-10-11"}
+    generate_url = f"{report_url}/generate"
+
+    assert client.get(report_url, params=params, headers=PARENT).json()["status"] == "pending"
+    assert client.post(generate_url, json={"child_id": "child-1"}, headers=CHILD).status_code == 403
+    client.post("/v1/dev/segments/text", json=SAMPLE, headers=DEVICE)
+    generated = client.post(generate_url, json={"child_id": "child-1"}, headers=PARENT)
+    assert generated.status_code == 200
+    assert generated.json()["status"] == "ready"
+    assert generated.json()["event_count"] == 1
+    assert generated.json()["main_issue"]["event_ids"]
+    assert client.get(report_url, params=params, headers=PARENT).json() == generated.json()
+
+    client.post("/v1/dev/segments/text", json={**SAMPLE, "segment_id": "seg-2"}, headers=DEVICE)
+    assert client.get(report_url, params=params, headers=PARENT).json()["status"] == "pending"
+    refreshed = client.post(generate_url, json={"child_id": "child-1"}, headers=PARENT).json()
+    assert refreshed["event_count"] == 2 and refreshed["revision"] == 2
+    assert client.get(report_url, params=params, headers=PARENT).json() == refreshed
+
+    service._store.close()
+    reopened = SceneService(now=lambda: clock[0], sqlite_path=str(path))
+    assert reopened.report(child_id="child-1", day=datetime(2026, 10, 11).date()) == refreshed
+    reopened._store.close()
 
 
 def test_story_recommendation_uses_active_event_and_age():
@@ -605,7 +653,8 @@ def test_old_cached_report_is_rebuilt_with_coverage_fields(tmp_path):
         db.execute("UPDATE reports SET data=?", ('{"date":"2026-10-11","status":"ready","revision":1,"event_count":1}',))
     reopened = SceneService(now=lambda: clock[0], sqlite_path=str(path))
     rebuilt = reopened.report(child_id="child-1", day=day)
-    assert rebuilt["report_schema_version"] == 2
+    assert rebuilt["report_schema_version"] == 4
+    assert rebuilt["main_issue"]["problem"]
     assert rebuilt["input_counts"]["input_count"] == 1
     reopened._store.close()
 

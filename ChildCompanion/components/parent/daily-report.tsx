@@ -2,23 +2,45 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Check, Info, PencilLine, Send } from 'lucide-react'
+import { Check, Info, PencilLine, RefreshCw, Send } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/components/app-store'
 import { EmotionBar, Legend, PageHeader, Panel } from '@/components/parent/parts'
 import { STORIES, TODAY_SUMMARY } from '@/lib/mock-data'
-import { correctInput, type ParentInput } from '@/lib/api'
+import { correctInput, generateDailyReport, type ParentInput } from '@/lib/api'
 
 export function DailyReport() {
-  const { childId, today, inputs, report, pushedStories, pushStory, refreshData, dataError } = useAppStore()
+  const { childId, profile, today, inputs, report, applyReport, pushedStories, pushStory, refreshData, dataError } = useAppStore()
+  const [generating, setGenerating] = useState(false)
+  async function generateNow() {
+    if (!profile || generating) return
+    setGenerating(true)
+    try {
+      const generated = await generateDailyReport(childId)
+      applyReport(generated)
+      void refreshData()
+      toast.success(generated.status === 'ready' ? '今日报告已生成' : '已生成报告：今天的信息还不足以总结同伴相处情况')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '生成报告失败')
+    } finally {
+      setGenerating(false)
+    }
+  }
   const recommended = report?.status === 'ready' && report.story_topic === 'friendship_and_inclusion'
     ? STORIES.find((story) => story.id === 's2') : undefined
   return (
     <>
-      <PageHeader title="今日日报" sub={`${today?.date ?? '今日'} · ${report?.status === 'pending' ? '19:00 后生成' : report?.status === 'ready' ? '已生成' : '信息不足'}`} />
+      <PageHeader
+        title="今日日报"
+        sub={`${today?.date ?? '今日'} · ${report?.status === 'pending' ? '待生成' : report?.status === 'ready' ? '已生成' : '信息不足'}`}
+        action={<Button onClick={() => void generateNow()} disabled={!profile || generating}>
+          <RefreshCw className={generating ? 'animate-spin' : ''} />
+          {generating ? '正在生成…' : report?.status === 'pending' ? '立即生成今日报告' : '重新生成今日报告'}
+        </Button>}
+      />
       {dataError && <p role="alert" className="mb-4 rounded-2xl bg-destructive/10 p-4 text-sm">后端连接失败：{dataError}</p>}
-      <div className="mb-4 flex items-start gap-3 rounded-2xl bg-muted/70 p-4 text-sm"><Info className="mt-0.5 size-4 shrink-0" /><p>{report?.status === 'pending' ? '今日日报尚未到生成时间。' : report?.status === 'ready' || report?.status === 'insufficient' ? report.coverage_note : '请先设置孩子档案并连接本地后端。'}原始录音不存储；当日可查看 ASR 文字。</p></div>
+      <div className="mb-4 flex items-start gap-3 rounded-2xl bg-muted/70 p-4 text-sm"><Info className="mt-0.5 size-4 shrink-0" /><p>{report?.status === 'pending' ? '可随时手动生成；未手动生成时，今晚 19:00 自动生成。' : report?.status === 'ready' || report?.status === 'insufficient' ? report.coverage_note : '请先设置孩子档案并连接本地后端。'}原始录音不存储；当日可查看 ASR 文字。</p></div>
       <div className="grid gap-4 lg:grid-cols-3">
         <div className="flex flex-col gap-4 lg:col-span-2">
           <Panel title="情绪分布"><EmotionBar mix={TODAY_SUMMARY.mood} className="h-6" /><div className="mt-3"><Legend emotions={TODAY_SUMMARY.mood.map((item) => item.emotion)} /></div></Panel>
@@ -26,9 +48,14 @@ export function DailyReport() {
             {inputs.length === 0 ? <p className="text-sm text-muted-foreground">今天还没有收到按键留言。</p> : <ul className="flex flex-col gap-3">{inputs.map((input) => <InputItem key={`${input.device_id}/${input.segment_id}`} input={input} childId={childId} onSaved={refreshData} />)}</ul>}
           </Panel>
           <Panel title="报告观察" action={report?.status === 'ready' ? <span className="text-xs text-muted-foreground">版本 {report.revision}</span> : undefined}>
-            {report?.status === 'ready' ? <ul className="flex flex-col gap-3">{report.observations.map((item, index) => <li key={`${item.event_ids.join('-')}-${index}`} className="rounded-xl bg-secondary/40 p-3 text-sm">{item.text}<span className="mt-1 block text-xs text-muted-foreground">依据事件：{item.event_ids.join('、')}</span></li>)}</ul> : <p className="text-sm text-muted-foreground">{report?.status === 'pending' ? '等待今晚生成报告。' : '目前没有足够的同伴相处信息。'}</p>}
+            {report?.status === 'ready' ? <ul className="flex flex-col gap-3">{report.observations.map((item, index) => <li key={`${item.event_ids.join('-')}-${index}`} className="rounded-xl bg-secondary/40 p-3 text-sm">{item.text}<span className="mt-1 block text-xs text-muted-foreground">依据事件：{item.event_ids.join('、')}</span></li>)}</ul> : <p className="text-sm text-muted-foreground">{report?.status === 'pending' ? '点击上方按钮，立即生成今日报告。' : '目前没有足够的同伴相处信息。'}</p>}
           </Panel>
-          {report?.status !== 'pending' && report?.unknowns && <Panel title="还不能确定"><ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">{report.unknowns.map((item) => <li key={item}>{item}</li>)}</ul></Panel>}
+          {report?.status !== 'pending' && report && <Panel title="主要问题与家长引导">
+            {report.main_issue ? <div className="space-y-3 text-sm">
+              <p><span className="font-semibold">从留言看，孩子主要遇到：</span>{report.main_issue.problem}</p>
+              <p><span className="font-semibold">家长可以这样引导：</span>{report.main_issue.guidance}</p>
+            </div> : <p className="text-sm text-muted-foreground">今天还没有足够的同伴相处留言，暂时无法总结主要问题；可以先听孩子说说今天的经历。</p>}
+          </Panel>}
         </div>
         <div className="flex flex-col gap-4">
           <Panel title="建议家长怎么聊">

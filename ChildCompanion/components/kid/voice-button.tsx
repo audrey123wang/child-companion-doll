@@ -15,7 +15,7 @@ export type VoiceButtonProps = {
 const HINT = {
   idle: '按一下，和我说话',
   listening: '我在听呢，再按一下结束',
-  busy: '语音功能待接入',
+  busy: '稍等一下，我在想',
 } as const
 
 /**

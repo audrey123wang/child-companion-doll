@@ -88,7 +88,7 @@ export function Notices() {
               <p className="text-center text-4xl font-light tabular-nums">19:02</p>
               <p className="mb-5 text-center text-xs opacity-75">10月11日 星期日</p>
               <div className="rounded-2xl bg-white/20 p-3 backdrop-blur">
-                <p className="text-xs opacity-80">暖暖伙伴 · 现在</p>
+                <p className="text-xs opacity-80">嘟嘟 · 现在</p>
                 <p className="mt-1 text-sm font-semibold">{preview?.lockText}</p>
               </div>
             </div>

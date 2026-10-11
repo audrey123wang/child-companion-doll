@@ -66,8 +66,18 @@ class ReportInputCounts(BaseModel):
     unreadable_count: int
 
 
+class GenerateDailyReportRequest(BaseModel):
+    child_id: str = Field(min_length=1, max_length=64)
+
+
 class ReportObservation(BaseModel):
     text: str
+    event_ids: list[str]
+
+
+class ReportMainIssue(BaseModel):
+    problem: str
+    guidance: str
     event_ids: list[str]
 
 
@@ -83,6 +93,7 @@ class FinishedDailyReport(BaseModel):
     revision: int
     report_schema_version: int
     observations: list[ReportObservation]
+    main_issue: ReportMainIssue | None
     unknowns: list[str]
     parent_prompts: list[str]
     story_topic: str | None
@@ -105,6 +116,12 @@ class TranscriptCorrection(BaseModel):
 class ChatTurn(BaseModel):
     child_id: str = Field(min_length=1, max_length=64)
     story_id: str = Field(min_length=1, max_length=64)
+    text: str = Field(min_length=1, max_length=300)
+    session_id: str | None = Field(default=None, max_length=64)
+
+
+class HomeChatTurn(BaseModel):
+    child_id: str = Field(min_length=1, max_length=64)
     text: str = Field(min_length=1, max_length=300)
     session_id: str | None = Field(default=None, max_length=64)
 
@@ -390,6 +407,11 @@ def create_app(
         require_child_scope(child_id)
         return app.state.service.report(child_id=child_id, day=day)
 
+    @app.post("/v1/parent/reports/daily/generate", dependencies=[Depends(parent)], response_model=FinishedDailyReport)
+    def generate_daily_report(body: GenerateDailyReportRequest):
+        require_child_scope(body.child_id)
+        return app.state.service.generate_report_now(child_id=body.child_id)
+
     @app.patch("/v1/parent/events/{event_id}", dependencies=[Depends(parent)])
     def revise_event(event_id: str, body: EventRevision):
         require_child_scope(body.child_id)
@@ -463,8 +485,7 @@ def create_app(
             raise HTTPException(status_code=404, detail="story session not found")
         return {"status": "stopped", "session_id": session_id}
 
-    @app.post("/v1/child/chat-turns", dependencies=[Depends(child)], response_model=ChildChatResult)
-    def chat_turn(body: ChatTurn):
+    def complete_chat(body: ChatTurn | HomeChatTurn):
         if app.state.chat_model is None and not allowed:
             raise HTTPException(status_code=503, detail="LLM provider not configured")
         try:
@@ -478,6 +499,14 @@ def create_app(
             raise HTTPException(status_code=502, detail=str(exc)) from exc
         except ValueError as exc:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
+
+    @app.post("/v1/child/chat-turns", dependencies=[Depends(child)], response_model=ChildChatResult)
+    def chat_turn(body: ChatTurn):
+        return complete_chat(body)
+
+    @app.post("/v1/child/conversations/turns", dependencies=[Depends(child)], response_model=ChildChatResult)
+    def home_chat_turn(body: HomeChatTurn):
+        return complete_chat(body)
 
     @app.post("/v1/child/chat-turns/transcribe", dependencies=[Depends(child)], response_model=ChildTranscriptionResult)
     async def transcribe_child_turn(request: Request, x_child_id: str = Header(min_length=1, max_length=64)):

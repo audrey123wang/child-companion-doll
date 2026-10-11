@@ -29,7 +29,7 @@ export function KidApp() {
         {isHome ? (
           <div className="flex items-center gap-2">
             <span className="font-display text-2xl" style={{ color: animal.color }}>
-              暖暖伙伴
+              嘟嘟
             </span>
           </div>
         ) : (

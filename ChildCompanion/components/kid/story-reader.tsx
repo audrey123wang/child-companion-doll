@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
+import { ArrowLeft, ChevronLeft, ChevronRight, Pause, Play } from 'lucide-react'
 import type { Story } from '@/lib/story-friendship'
 import { useAppStore } from '@/components/app-store'
 import { useStoryNarration } from '@/lib/use-story-narration'
@@ -20,11 +20,15 @@ import { cn } from '@/lib/utils'
 export function StoryReader({
   story,
   onFinish,
+  onBack,
+  initialAudio,
   className,
 }: {
   story: Story
   /** 最后一幕点击「听完啦」时触发 */
   onFinish: () => void
+  onBack: () => void
+  initialAudio?: HTMLAudioElement | null
   className?: string
 }) {
   const [current, setCurrent] = useState(0)
@@ -34,7 +38,14 @@ export function StoryReader({
 
   const scene = story.scenes[current]
   const { childId } = useAppStore()
-  const narration = useStoryNarration(childId, story.id, current, scene.text, () => {})
+  const narration = useStoryNarration(
+    childId,
+    story.id,
+    current,
+    scene.text,
+    () => setCurrent((page) => Math.min(story.scenes.length - 1, page + 1)),
+    { recordingUrl: scene.audio, autoPlay: true, initialAudio: current === 0 ? initialAudio : null },
+  )
   const isFirst = current === 0
   const isLast = current === story.scenes.length - 1
 
@@ -103,10 +114,19 @@ export function StoryReader({
         className,
       )}
     >
-      {/* 顶部：故事标题 */}
-      <h2 className="shrink-0 text-center text-sm font-bold text-foreground/80 sm:text-base">
-        {story.title}
-      </h2>
+      {/* 顶部：返回对话与故事标题 */}
+      <div className="relative flex w-full shrink-0 items-center justify-center">
+        <button
+          type="button"
+          onClick={() => { narration.stop(); onBack() }}
+          className="absolute left-0 flex items-center gap-1 rounded-full bg-card/85 px-3 py-2 text-xs font-semibold text-foreground shadow-sm sm:text-sm"
+        >
+          <ArrowLeft className="size-4" />返回对话
+        </button>
+        <h2 className="px-24 text-center text-sm font-bold text-foreground/80 sm:text-base">
+          {story.title}
+        </h2>
+      </div>
 
       {/* 主体：大幅插画。弹性占据剩余高度，但不会把字幕挤出屏幕 */}
       <div className="flex min-h-0 w-full flex-1 items-center justify-center">
@@ -158,10 +178,10 @@ export function StoryReader({
       <div className="flex shrink-0 flex-col items-center gap-1">
         <button type="button" onClick={narration.playing ? narration.pause : narration.play} disabled={narration.loading} className="flex items-center gap-2 rounded-full bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
           {narration.playing ? <Pause className="size-4" /> : <Play className="size-4" />}
-          {narration.loading ? '正在生成配音…' : narration.playing ? '暂停配音' : narration.started ? '继续配音' : '播放本页配音'}
+          {narration.loading ? '正在加载录音…' : narration.playing ? '暂停故事' : '播放本页'}
         </button>
         {narration.error && <p role="alert" className="text-xs text-destructive">{narration.error}</p>}
-        <p className="text-[11px] text-muted-foreground">这段声音由 AI 生成</p>
+        <p className="text-[11px] text-muted-foreground">故事录音已预先准备好，翻页后会继续播放</p>
       </div>
       <div className="flex shrink-0 w-full items-center justify-center gap-4">
         <button
@@ -194,7 +214,7 @@ export function StoryReader({
         {isLast ? (
           <button
             type="button"
-          onClick={() => { narration.stop(); onFinish() }}
+            onClick={() => { narration.stop(); onFinish() }}
             className="h-10 rounded-full bg-primary/90 px-6 text-sm font-bold text-primary-foreground shadow-sm transition active:scale-[0.97] sm:text-base"
           >
             听完啦

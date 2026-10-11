@@ -10,7 +10,12 @@ import { startRecording, type RecordingHandle } from '@/lib/recording'
 
 type Message = { id: number; from: 'kid' | 'pal'; text: string; support?: boolean }
 
-export function KidChat({ storyId }: { storyId?: string }) {
+export function KidChat({ storyId, embedded = false, onClose, registerStart }: {
+  storyId?: string
+  embedded?: boolean
+  onClose?: () => void
+  registerStart?: (start: (() => void) | null) => void
+}) {
   const { animal, childId, goKid } = useAppStore()
   const story = storyId ? STORIES.find((item) => item.id === storyId) : undefined
   const [messages, setMessages] = useState<Message[]>([{ id: 0, from: 'pal', text: story ? `刚才的《${story.title}》好听吗？你想聊聊朋友之间的事吗？` : '你好呀，想和我聊聊今天和朋友相处的事吗？' }])
@@ -59,6 +64,11 @@ export function KidChat({ storyId }: { storyId?: string }) {
       timer.current = setTimeout(() => void stopAndTranscribe(), 12000)
     } catch (cause) { setError(cause instanceof Error ? cause.message : '麦克风不可用') }
   }
+  useEffect(() => {
+    if (!registerStart) return
+    registerStart(() => { if (!recording && !busy && !finished) void toggleRecording() })
+    return () => registerStart(null)
+  }, [registerStart, recording, busy, finished])
   async function send(text: string) {
     const value = text.trim()
     if (!value || busy) return
@@ -90,10 +100,11 @@ export function KidChat({ storyId }: { storyId?: string }) {
   function exit() {
     recorder.current?.cancel()
     if (sessionId) void stopStorySession(childId, sessionId).catch(() => {})
-    goKid({ name: 'home' })
+    if (onClose) onClose()
+    else goKid({ name: 'home' })
   }
-  return <div className="flex h-full flex-col gap-4 px-6 pb-5 pt-2 sm:flex-row sm:gap-8">
-    <aside className="flex shrink-0 flex-row items-center gap-4 sm:w-72 sm:flex-col sm:justify-center"><Character animal={animal} state={recording ? 'listening' : busy ? 'thinking' : 'welcome'} className="w-32 sm:w-full" /><p className="text-sm text-muted-foreground">我会先显示你说的话，再告诉你我的回答。</p></aside>
+  return <div className={embedded ? 'flex h-[26rem] w-full min-h-0 flex-col sm:h-[29rem]' : 'flex h-full flex-col gap-4 px-6 pb-5 pt-2 sm:flex-row sm:gap-8'}>
+    {!embedded && <aside className="flex shrink-0 flex-row items-center gap-4 sm:w-72 sm:flex-col sm:justify-center"><Character animal={animal} state={recording ? 'listening' : busy ? 'thinking' : 'welcome'} className="w-32 sm:w-full" /><p className="text-sm text-muted-foreground">我会先显示你说的话，再告诉你我的回答。</p></aside>}
     <section className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[2rem] bg-card shadow-sm">
       <div ref={list} className="flex flex-1 flex-col gap-4 overflow-y-auto p-6" aria-live="polite">
         {messages.map((message) => <div key={message.id} className={`flex ${message.from === 'kid' ? 'justify-end' : 'justify-start'}`}><p className={`max-w-[85%] rounded-3xl px-5 py-3 text-lg leading-relaxed ${message.from === 'kid' ? 'text-white' : message.support ? 'bg-primary/10' : 'bg-muted'}`} style={message.from === 'kid' ? { backgroundColor: animal.color } : undefined}>{message.text}</p></div>)}
